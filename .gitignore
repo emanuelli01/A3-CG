@@ -1,0 +1,7 @@
+"a3cg\" 
+a3cg/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+.env
