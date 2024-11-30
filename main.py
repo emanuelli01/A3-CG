@@ -157,15 +157,8 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
+            # Controle de movimento das camadas
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    rotation_y -= 15
-                if event.key == pygame.K_RIGHT:
-                    rotation_y += 15
-                if event.key == pygame.K_UP:
-                    rotation_x -= 15
-                if event.key == pygame.K_DOWN:
-                    rotation_x += 15
                 if event.key == pygame.K_w:
                     rubiks_cube.rotate_layer('y', 0.35, 1)
                 if event.key == pygame.K_s:
@@ -178,6 +171,17 @@ def main():
                     rubiks_cube.rotate_layer('z', 0.35, 1)
                 if event.key == pygame.K_q:
                     rubiks_cube.rotate_layer('z', -0.35, 1)
+
+        # Controle contínuo de rotação com as setas
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            rotation_y -= 3
+        if keys[pygame.K_RIGHT]:
+            rotation_y += 3
+        if keys[pygame.K_UP]:
+            rotation_x -= 3
+        if keys[pygame.K_DOWN]:
+            rotation_x += 3
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glPushMatrix()
