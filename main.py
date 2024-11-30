@@ -11,110 +11,131 @@ colors = {
     "red": [1.0, 0.0, 0.0],
     "orange": [1.0, 0.5, 0.0],
     "blue": [0.0, 0.0, 1.0],
-    "green": [0.0, 1.0, 0.0]
+    "green": [0.0, 1.0, 0.0],
+    "black": [0.0, 0.0, 0.0],  # Cor para as faces internas (invisíveis)
 }
 
-# Representação das faces do cubo como matrizes 3x3
-cube_faces = {
-    "front": np.array([["green"]*3]*3),
-    "back": np.array([["blue"]*3]*3),
-    "top": np.array([["white"]*3]*3),
-    "bottom": np.array([["yellow"]*3]*3),
-    "left": np.array([["orange"]*3]*3),
-    "right": np.array([["red"]*3]*3),
-}
+class SmallCube:
+    """Representa um cubo pequeno do Rubik's Cube."""
+    def __init__(self, position, face_colors):
+        self.position = np.array(position)  # Posição central do cubo
+        self.face_colors = face_colors  # Cores das faces
 
-def draw_face(color, offset_x, offset_y, offset_z, normal):
-    size = 0.33  # Tamanho de cada quadrado
-    padding = 0.01  # Espaço entre os quadrados
+    def draw(self):
+        """Desenha o cubo pequeno com suas faces coloridas."""
+        x, y, z = self.position
+        size = 0.3  # Tamanho do cubo
 
-    glBegin(GL_QUADS)
-    for i in range(3):
-        for j in range(3):
-            glColor3fv(color)  # Define a cor do quadrado
-            x = offset_x + (i * (size + padding))
-            y = offset_y + (j * (size + padding))
-            z = offset_z
+        faces = [
+            ([x, y, z + size], [x + size, y, z + size], [x + size, y + size, z + size], [x, y + size, z + size]),  # Frente
+            ([x, y, z], [x + size, y, z], [x + size, y + size, z], [x, y + size, z]),  # Trás
+            ([x, y, z], [x, y + size, z], [x, y + size, z + size], [x, y, z + size]),  # Esquerda
+            ([x + size, y, z], [x + size, y + size, z], [x + size, y + size, z + size], [x + size, y, z + size]),  # Direita
+            ([x, y + size, z], [x + size, y + size, z], [x + size, y + size, z + size], [x, y + size, z + size]),  # Topo
+            ([x, y, z], [x + size, y, z], [x + size, y, z + size], [x, y, z + size]),  # Base
+        ]
 
-            if normal == 'x':
-                glVertex3f(z, x, y)
-                glVertex3f(z, x + size, y)
-                glVertex3f(z, x + size, y + size)
-                glVertex3f(z, x, y + size)
-            elif normal == 'y':
-                glVertex3f(x, z, y)
-                glVertex3f(x + size, z, y)
-                glVertex3f(x + size, z, y + size)
-                glVertex3f(x, z, y + size)
-            elif normal == 'z':
-                glVertex3f(x, y, z)
-                glVertex3f(x + size, y, z)
-                glVertex3f(x + size, y + size, z)
-                glVertex3f(x, y + size, z)
-    glEnd()
+        for i, face in enumerate(faces):
+            glBegin(GL_QUADS)
+            glColor3fv(self.face_colors[i])
+            for vertex in face:
+                glVertex3fv(vertex)
+            glEnd()
 
-def draw_cube():
-    """Desenha o cubo mágico completo com faces 3x3"""
-    # Frente (verde)
-    draw_face(colors["green"], -0.5, -0.5, 0.5, 'z')  # Cor verde para a frente
+class RubiksCube:
+    """Representa o cubo mágico como um conjunto de cubos pequenos."""
+    def __init__(self):
+        self.cubes = []
+        offset = 0.35  # Distância entre os centros dos cubos pequenos
+        face_mapping = [
+            colors["green"], colors["blue"],  # Frente, Trás
+            colors["orange"], colors["red"],  # Esquerda, Direita
+            colors["white"], colors["yellow"],  # Topo, Base
+        ]
 
-    # Trás (azul)
-    draw_face(colors["blue"], -0.5, -0.5, -0.5, 'z')  # Cor azul para a parte de trás
+        for x in range(-1, 2):
+            for y in range(-1, 2):
+                for z in range(-1, 2):
+                    if x == 0 and y == 0 and z == 0:  # Ignorar o cubo central
+                        continue
 
-    # Superior (branca)
-    draw_face(colors["white"], -0.5, -0.5, 0.5, 'y')  # Cor branca para a parte superior
+                    face_colors = [
+                        face_mapping[0] if z == 1 else colors["black"],  # Frente
+                        face_mapping[1] if z == -1 else colors["black"],  # Trás
+                        face_mapping[2] if x == -1 else colors["black"],  # Esquerda
+                        face_mapping[3] if x == 1 else colors["black"],  # Direita
+                        face_mapping[4] if y == 1 else colors["black"],  # Topo
+                        face_mapping[5] if y == -1 else colors["black"],  # Base
+                    ]
 
-    # Inferior (amarela)
-    draw_face(colors["yellow"], -0.5, -0.5, -0.5, 'y')  # Cor amarela para a parte inferior
+                    self.cubes.append(SmallCube((x * offset, y * offset, z * offset), face_colors))
 
-    # Direita (vermelha)
-    draw_face(colors["red"], -0.5, -0.5, -0.5, 'x')  # Cor vermelha para a parte direita (ajustado)
+    def draw(self):
+        """Desenha o cubo mágico completo."""
+        for cube in self.cubes:
+            cube.draw()
 
-    # Esquerda (laranja)
-    draw_face(colors["orange"], -0.5, -0.5, 0.5, 'x')  # Cor laranja para a parte esquerda
+    def rotate_layer(self, axis, layer_value, direction):
+        """Rotaciona uma camada específica do cubo mágico e atualiza as cores."""
+        angle = np.radians(90) * direction
+        rotation_matrix = self._get_rotation_matrix(axis, angle)
 
-def rotate_layer(layer, direction='clockwise'):
-    """Função para girar uma camada"""
-    if direction == 'clockwise':
-        return np.rot90(layer, -1)  # Rotaciona para a direita
-    else:
-        return np.rot90(layer, 1)  # Rotaciona para a esquerda
+        # Filtrar cubos que estão na camada a ser rotacionada
+        affected_cubes = [cube for cube in self.cubes if np.isclose(cube.position[axis_map[axis]], layer_value)]
 
-def rotate_top_layer(direction='clockwise'):
-    """Função para girar a camada superior"""
-    cube_faces["top"] = rotate_layer(cube_faces["top"], direction)
-    cube_faces["front"][0], cube_faces["left"][0], cube_faces["back"][0], cube_faces["right"][0] = \
-        cube_faces["left"][0], cube_faces["back"][0], cube_faces["right"][0], cube_faces["front"][0]
+        # Atualizar posições e cores dos cubos afetados
+        for cube in affected_cubes:
+            cube.position = np.dot(rotation_matrix, cube.position)
+            self._rotate_colors(cube, axis, direction)
 
-def rotate_bottom_layer(direction='clockwise'):
-    """Função para girar a camada inferior"""
-    cube_faces["bottom"] = rotate_layer(cube_faces["bottom"], direction)
-    cube_faces["front"][2], cube_faces["left"][2], cube_faces["back"][2], cube_faces["right"][2] = \
-        cube_faces["right"][2], cube_faces["front"][2], cube_faces["left"][2], cube_faces["back"][2]
+    def _rotate_colors(self, cube, axis, direction):
+        """Atualiza as cores das faces do cubo pequeno após a rotação."""
+        if axis == 'x':  # Eixo X
+            if direction == 1:
+                cube.face_colors[4], cube.face_colors[1], cube.face_colors[5], cube.face_colors[0] = \
+                    cube.face_colors[1], cube.face_colors[5], cube.face_colors[0], cube.face_colors[4]
+            else:
+                cube.face_colors[4], cube.face_colors[0], cube.face_colors[5], cube.face_colors[1] = \
+                    cube.face_colors[0], cube.face_colors[5], cube.face_colors[1], cube.face_colors[4]
 
-def rotate_left_layer(direction='clockwise'):
-    """Função para girar a camada esquerda"""
-    cube_faces["left"] = rotate_layer(cube_faces["left"], direction)
-    cube_faces["front"][:, 0], cube_faces["top"][:, 0], cube_faces["bottom"][:, 0], cube_faces["back"][:, 2] = \
-        cube_faces["top"][:, 0], cube_faces["back"][:, 2], cube_faces["bottom"][:, 0], cube_faces["front"][:, 0]
+        elif axis == 'y':  # Eixo Y
+            if direction == 1:
+                cube.face_colors[0], cube.face_colors[3], cube.face_colors[1], cube.face_colors[2] = \
+                    cube.face_colors[2], cube.face_colors[0], cube.face_colors[3], cube.face_colors[1]
+            else:
+                cube.face_colors[0], cube.face_colors[2], cube.face_colors[1], cube.face_colors[3] = \
+                    cube.face_colors[3], cube.face_colors[1], cube.face_colors[2], cube.face_colors[0]
 
-def rotate_right_layer(direction='clockwise'):
-    """Função para girar a camada direita"""
-    cube_faces["right"] = rotate_layer(cube_faces["right"], direction)
-    cube_faces["front"][:, 2], cube_faces["top"][:, 2], cube_faces["bottom"][:, 2], cube_faces["back"][:, 0] = \
-        cube_faces["back"][:, 0], cube_faces["top"][:, 2], cube_faces["front"][:, 2], cube_faces["bottom"][:, 2]
+        elif axis == 'z':  # Eixo Z
+            if direction == 1:
+                cube.face_colors[4], cube.face_colors[2], cube.face_colors[5], cube.face_colors[3] = \
+                    cube.face_colors[3], cube.face_colors[4], cube.face_colors[2], cube.face_colors[5]
+            else:
+                cube.face_colors[4], cube.face_colors[3], cube.face_colors[5], cube.face_colors[2] = \
+                    cube.face_colors[2], cube.face_colors[5], cube.face_colors[3], cube.face_colors[4]
 
-def rotate_front_layer(direction='clockwise'):
-    """Função para girar a camada frontal"""
-    cube_faces["front"] = rotate_layer(cube_faces["front"], direction)
-    cube_faces["top"][2], cube_faces["left"][:, 2], cube_faces["bottom"][0], cube_faces["right"][:, 0] = \
-        cube_faces["left"][:, 2], cube_faces["bottom"][0], cube_faces["right"][:, 0], cube_faces["top"][2]
+    def _get_rotation_matrix(self, axis, angle):
+        """Retorna a matriz de rotação para o eixo dado e ângulo."""
+        if axis == 'x':
+            return np.array([
+                [1, 0, 0],
+                [0, np.cos(angle), -np.sin(angle)],
+                [0, np.sin(angle), np.cos(angle)],
+            ])
+        elif axis == 'y':
+            return np.array([
+                [np.cos(angle), 0, np.sin(angle)],
+                [0, 1, 0],
+                [-np.sin(angle), 0, np.cos(angle)],
+            ])
+        elif axis == 'z':
+            return np.array([
+                [np.cos(angle), -np.sin(angle), 0],
+                [np.sin(angle), np.cos(angle), 0],
+                [0, 0, 1],
+            ])
 
-def rotate_back_layer(direction='clockwise'):
-    """Função para girar a camada traseira"""
-    cube_faces["back"] = rotate_layer(cube_faces["back"], direction)
-    cube_faces["top"][0], cube_faces["right"][:, 2], cube_faces["bottom"][2], cube_faces["left"][:, 0] = \
-        cube_faces["right"][:, 2], cube_faces["bottom"][2], cube_faces["left"][:, 0], cube_faces["top"][0]
+axis_map = {'x': 0, 'y': 1, 'z': 2}
 
 def main():
     """Função principal para criar a janela, configurar o OpenGL e gerenciar eventos."""
@@ -122,12 +143,13 @@ def main():
     display = (800, 600)
     pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
 
-    gluPerspective(45, (display[0] / display[1]), 0.1, 50.0)  # Configuração de perspectiva
-    glTranslatef(0.0, 0.0, -5)  # Posiciona a câmera
+    gluPerspective(45, (display[0] / display[1]), 0.1, 50.0)
+    glTranslatef(0.0, 0.0, -5)
 
-    glEnable(GL_DEPTH_TEST)  # Habilita o teste de profundidade para garantir que as faces não fiquem invisíveis
+    glEnable(GL_DEPTH_TEST)
 
-    rotation_x, rotation_y = 0, 0  # Ângulos de rotação
+    rubiks_cube = RubiksCube()
+    rotation_x, rotation_y = 0, 0
 
     running = True
     while running:
@@ -137,36 +159,33 @@ def main():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    rotation_y -= 15  # Rotaciona à esquerda
+                    rotation_y -= 15
                 if event.key == pygame.K_RIGHT:
-                    rotation_y += 15  # Rotaciona à direita
+                    rotation_y += 15
                 if event.key == pygame.K_UP:
-                    rotation_x -= 15  # Rotaciona para cima
+                    rotation_x -= 15
                 if event.key == pygame.K_DOWN:
-                    rotation_x += 15  # Rotaciona para baixo
-
-                # Teclas para girar as camadas
+                    rotation_x += 15
                 if event.key == pygame.K_w:
-                    rotate_top_layer('clockwise')
+                    rubiks_cube.rotate_layer('y', 0.35, 1)
                 if event.key == pygame.K_s:
-                    rotate_bottom_layer('clockwise')
+                    rubiks_cube.rotate_layer('y', -0.35, 1)
                 if event.key == pygame.K_a:
-                    rotate_left_layer('clockwise')
+                    rubiks_cube.rotate_layer('x', -0.35, 1)
                 if event.key == pygame.K_d:
-                    rotate_right_layer('clockwise')
+                    rubiks_cube.rotate_layer('x', 0.35, 1)
                 if event.key == pygame.K_e:
-                    rotate_front_layer('clockwise')
+                    rubiks_cube.rotate_layer('z', 0.35, 1)
                 if event.key == pygame.K_q:
-                    rotate_back_layer('clockwise')
+                    rubiks_cube.rotate_layer('z', -0.35, 1)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glPushMatrix()
 
-        # Aplica as rotações da câmera
-        glRotatef(rotation_x, 1, 0, 0)  # Rotação no eixo X
-        glRotatef(rotation_y, 0, 1, 0)  # Rotação no eixo Y
+        glRotatef(rotation_x, 1, 0, 0)
+        glRotatef(rotation_y, 0, 1, 0)
 
-        draw_cube()  # Desenha o cubo mágico
+        rubiks_cube.draw()
 
         glPopMatrix()
         pygame.display.flip()
