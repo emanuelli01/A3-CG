@@ -12,43 +12,19 @@ COLORS = {
     'ORANGE': (1, 0.5, 0),
     'BLUE': (0, 0, 1),
     'GREEN': (0, 1, 0),
-    'BLACK': (0, 0, 0)  # Added BLACK color
+    'BLACK': (0, 0, 0)
 }
-EPSILON = 1e-5  # Ajuste conforme necessário
-
-
-
-import pygame
-from pygame.locals import *
-from OpenGL.GL import *
-from OpenGL.GLU import *
-import numpy as np
-
-# Constantes de cores
-COLORS = {
-    'WHITE': (1, 1, 1),
-    'YELLOW': (1, 1, 0),
-    'RED': (1, 0, 0),
-    'ORANGE': (1, 0.5, 0),
-    'BLUE': (0, 0, 1),
-    'GREEN': (0, 1, 0),
-    'BLACK': (0, 0, 0)  # Cor padrão para faces invisíveis
-}
-EPSILON = 1e-5
+EPSILON = 1e-5 # define variavel com ponto flutante de valor muito pequeno (para comparações)
 
 
 class Cubelet:
     def __init__(self, position):
-        """
-        Inicializa um cubelet (pequeno cubo) com cores padrão baseadas na posição
-        """
+        # Inicializa um cubelet (componente básico do cubo maior) com cores padrão baseadas na posição
         self.position = np.array(position, dtype=float)
         self.colors = self._get_default_colors(position)
 
     def _get_default_colors(self, pos):
-        """
-        Define as cores padrão com base na posição inicial do cubo
-        """
+        # Define as cores padrão com base na posição inicial do cubo
         x, y, z = pos
         colors = [
             COLORS['GREEN'] if np.abs(z - 1) < EPSILON else COLORS['BLACK'],  # Frente
@@ -61,9 +37,7 @@ class Cubelet:
         return colors
 
     def update_colors(self, axis, direction):
-        """
-        Atualiza as cores do cubelet após uma rotação.
-        """
+        # Atualiza as cores do cubelet após uma rotação.
         if axis == 'x':
             if direction == 1:
                 # Gira as cores no sentido horário no eixo X - A
@@ -102,9 +76,7 @@ class Cubelet:
 
 
     def draw(self, half=0.4):
-        """
-        Desenha o cubelet usando OpenGL
-        """
+        # Desenha o cubelet usando OpenGL
         x, y, z = self.position
         faces = [
             ([x - half, y - half, z + half], [x + half, y - half, z + half], [x + half, y + half, z + half],
@@ -123,7 +95,7 @@ class Cubelet:
 
         for i, face in enumerate(faces):
             glColor3fv(self.colors[i])
-            glBegin(GL_QUADS)
+            glBegin(GL_QUADS) # Informa ao Opengl que as coordenadas formarão uma única face quadrada
             for vertex in face:
                 glVertex3fv(vertex)
             glEnd()
@@ -131,7 +103,7 @@ class Cubelet:
 
 class RubiksCube:
     def __init__(self):
-        """Inicializa o cubo mágico com todos os cubelets"""
+        # Inicializa o cubo mágico com todos os cubelets
         self.cubelets = []
         for x in range(-1, 2):
             for y in range(-1, 2):
@@ -140,7 +112,7 @@ class RubiksCube:
                         continue
                     self.cubelets.append(Cubelet([x, y, z]))
 
-        # Estado de rotação
+        # Estado de rotação - variáveis de manipulação do cubo (interatividade)
         self.rotating_layer = None
         self.rotation_progress = 0
         self.rotation_speed = 0.2
@@ -149,7 +121,7 @@ class RubiksCube:
         self.rotation_layer_value = None
 
     def draw(self):
-        """Desenha todos os cubelets do cubo"""
+        # Desenha todos os cubelets do cubo
         for cubelet in self.cubelets:
             cubelet.draw()
 
@@ -173,7 +145,7 @@ class RubiksCube:
             self.rotation_progress = 0
 
     def update_rotation(self):
-        """Atualiza o estado de rotação da camada"""
+        #Atualiza o estado de rotação da camada
         if self.rotating_layer is not None:
             self.rotation_progress += self.rotation_speed
 
@@ -206,7 +178,7 @@ class RubiksCube:
                 self.rotation_layer_value = None
 
     def _get_rotation_matrix(self, axis, angle):
-        """Gera matriz de rotação para um eixo específico"""
+        # Gera matriz de rotação para um eixo específico - realiza as mudanças no cubo a partir de eixos e matrizes
         cos_a, sin_a = np.cos(angle), np.sin(angle)
 
         if axis == 'x':
@@ -233,7 +205,7 @@ def main():
     pygame.init()
     display = (800, 600)
     pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
-    pygame.display.set_caption("Cubo de Rubik Interativo")
+    pygame.display.set_caption("Cubo Mágico Interativo")
 
     # Configuração da perspectiva
     gluPerspective(55, (display[0] / display[1]), 0.1, 50.0)
